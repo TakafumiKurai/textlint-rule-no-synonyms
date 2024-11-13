@@ -1,4 +1,12 @@
-# @textlint-ja/textlint-rule-no-synonyms [![Actions Status](https://github.com/textlint-ja/textlint-rule-no-synonyms/workflows/ci/badge.svg)](https://github.com/textlint-ja/textlint-rule-no-synonyms/actions?query=workflow%3Aci)
+### このレポジトリは本家のtextlint-rule-no-synonymsからforkしたレポジトリです。
+[textlint-rule-no-synonyms](https://github.com/textlint-ja/textlint-rule-no-synonyms)をフォークしています。
+
+基本的なライセンスはフォーク元のレポジトリに準拠します。
+
+### 改変点
+利用しているモジュールの「sudachi-synonyms-dictionary」を、最新（2024.11.13時点）のsudachi-synonyms-dictionayを参照するように更新した[「sudachi-synonyms-dictionary-kurai-forked-ver」](https://github.com/TakafumiKurai/sudachi-synonyms-dictionary)に置き換えています。
+
+# @textlint-ja/textlint-rule-no-synonyms
 
 文章中の同義語を表記ゆれをチェックするtextlintルールです。
 

@@ -1,6 +1,6 @@
 import { TextlintRuleReporter } from "@textlint/types";
 import { createIndex, ItemGroup, Midashi } from "./create-index";
-import { SudachiSynonyms } from "sudachi-synonyms-dictionary";
+import { SudachiSynonyms } from "sudachi-synonyms-dictionary-kurai-forked-ver";
 import { wrapReportHandler } from "textlint-rule-helper";
 
 const TinySegmenter = require("tiny-segmenter");
