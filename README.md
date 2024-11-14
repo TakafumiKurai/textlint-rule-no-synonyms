@@ -3,6 +3,8 @@
 
 基本的なライセンスはフォーク元のレポジトリに準拠します。
 
+### 2024.11.14時点(ver2.0.1)では、改修中のためうまく動きません
+
 ### 改変点
 - 利用しているモジュールの「sudachi-synonyms-dictionary」を、最新（2024.11.13時点）のsudachi-synonyms-dictionayを参照するように更新した[「sudachi-synonyms-dictionary-kurai-forked-ver」](https://github.com/TakafumiKurai/sudachi-synonyms-dictionary)に置き換え
 - 利用するsegmenterをtiny-segmenterからkuromojinに置き換え
