@@ -1,4 +1,4 @@
-import { fetchDictionary, SudachiSynonyms } from "sudachi-synonyms-dictionary";
+import { fetchDictionary, SudachiSynonyms } from "sudachi-synonyms-dictionary-kurai-forked-ver";
 import { isNumberString } from "./is-number";
 
 export type Midashi = string;
@@ -54,12 +54,12 @@ export class ItemGroup {
  */
 const assertInstallationSudachiSynonymsDictionary = () => {
     try {
-        require("sudachi-synonyms-dictionary");
+        require("sudachi-synonyms-dictionary-kurai-forked-ver");
     } catch (error) {
-        throw new Error(`sudachi-synonyms-dictionaryがインストールされていません。
-ルールとは別にsudachi-synonyms-dictionaryをインストールしてください。
-      
-$ npm install sudachi-synonyms-dictionary
+        throw new Error(`sudachi-synonyms-dictionary-kurai-forked-verがインストールされていません。
+ルールとは別にsudachi-synonyms-dictionary-kurai-forked-verをインストールしてください。
+
+$ npm install sudachi-synonyms-dictionary-kurai-forked-ver
 
 
 `);

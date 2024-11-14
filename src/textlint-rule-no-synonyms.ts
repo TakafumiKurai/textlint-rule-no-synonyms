@@ -1,10 +1,8 @@
 import { TextlintRuleReporter } from "@textlint/types";
 import { createIndex, ItemGroup, Midashi } from "./create-index";
-import { SudachiSynonyms } from "sudachi-synonyms-dictionary";
+import { SudachiSynonyms } from "sudachi-synonyms-dictionary-kurai-forked-ver";
 import { wrapReportHandler } from "textlint-rule-helper";
-
-const TinySegmenter = require("tiny-segmenter");
-const segmenter = new TinySegmenter(); // インスタンス生成
+import { tokenize } from "kuromojin";
 
 export interface Options {
     /**
@@ -97,7 +95,7 @@ const report: TextlintRuleReporter<Options> = (context, options = {}) => {
                 async [Syntax.Str](node) {
                     const { keyItemGroupMap } = await indexPromise;
                     const text = getSource(node);
-                    const segments: string[] = segmenter.segment(text);
+                    const segments = (await tokenize(text)).map((e) => e.surface_form);
                     let absoluteIndex = node.range[0];
                     segments.forEach((segement) => {
                         matchSegment(segement, absoluteIndex, keyItemGroupMap);
