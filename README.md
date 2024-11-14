@@ -4,7 +4,8 @@
 基本的なライセンスはフォーク元のレポジトリに準拠します。
 
 ### 改変点
-利用しているモジュールの「sudachi-synonyms-dictionary」を、最新（2024.11.13時点）のsudachi-synonyms-dictionayを参照するように更新した[「sudachi-synonyms-dictionary-kurai-forked-ver」](https://github.com/TakafumiKurai/sudachi-synonyms-dictionary)に置き換えています。
+- 利用しているモジュールの「sudachi-synonyms-dictionary」を、最新（2024.11.13時点）のsudachi-synonyms-dictionayを参照するように更新した[「sudachi-synonyms-dictionary-kurai-forked-ver」](https://github.com/TakafumiKurai/sudachi-synonyms-dictionary)に置き換え
+- 利用するsegmenterをtiny-segmenterからkuromojinに置き換え
 
 # @textlint-ja/textlint-rule-no-synonyms
 
