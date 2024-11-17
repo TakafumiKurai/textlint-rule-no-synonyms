@@ -3,6 +3,9 @@ import { createIndex, ItemGroup, Midashi } from "./create-index";
 import { SudachiSynonyms } from "sudachi-synonyms-dictionary-kurai-forked-ver";
 import { wrapReportHandler } from "textlint-rule-helper";
 import { tokenize } from "kuromojin";
+import TinySegmenter from "tiny-segmenter";
+
+const segmenter = new TinySegmenter();
 
 export interface Options {
     /**
