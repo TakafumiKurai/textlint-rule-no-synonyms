@@ -57,11 +57,46 @@ tester.run("textlint-rule-no-synonyms", rule, {
     ],
     invalid: [
         {
+            text: "問い合わせと問合せ",
+            errors: [
+                {
+                    message: "同義語である「問い合わせ」と「問合せ」が利用されています",
+                    index: 0
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「問い合わせ」と「問合せ」が利用されています",
+                    index: 6,
+                    line: 1,
+                    column: 7,
+                    severity: 2,
+                    fix: {
+                        range: [6, 9],
+                        text: "問い合わせ"
+                    }
+                }
+            ]
+        },
+        {
             text: "サーバとサーバーの表記揺れがある",
             errors: [
                 {
                     message: "同義語である「サーバ」と「サーバー」が利用されています",
-                    index: 4
+                    index: 0
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「サーバ」と「サーバー」が利用されています",
+                    index: 4,
+                    line: 1,
+                    column: 5,
+                    severity: 2,
+                    fix: {
+                        range: [4, 8],
+                        text: "サーバ"
+                    }
                 }
             ]
         },
@@ -70,7 +105,20 @@ tester.run("textlint-rule-no-synonyms", rule, {
             errors: [
                 {
                     message: "同義語である「雇入」と「雇入れ」が利用されています",
-                    index: 5
+                    index: 2
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「雇入」と「雇入れ」が利用されています",
+                    index: 5,
+                    line: 1,
+                    column: 6,
+                    severity: 2,
+                    fix: {
+                        range: [5, 8],
+                        text: "雇入"
+                    }
                 }
             ]
         },
@@ -82,7 +130,20 @@ tester.run("textlint-rule-no-synonyms", rule, {
             errors: [
                 {
                     message: "同義語である「blog」と「ブログ」が利用されています",
-                    index: 5
+                    index: 0
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「blog」と「ブログ」が利用されています",
+                    index: 5,
+                    line: 1,
+                    column: 6,
+                    severity: 2,
+                    fix: {
+                        range: [5, 8],
+                        text: "blog"
+                    }
                 }
             ]
         },
@@ -94,7 +155,20 @@ tester.run("textlint-rule-no-synonyms", rule, {
             errors: [
                 {
                     message: "同義語である「1」と「一」が利用されています",
-                    index: 5
+                    index: 0
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「1」と「一」が利用されています",
+                    index: 5,
+                    line: 1,
+                    column: 6,
+                    severity: 2,
+                    fix: {
+                        range: [5, 6],
+                        text: "1"
+                    }
                 }
             ]
         },
@@ -106,7 +180,20 @@ tester.run("textlint-rule-no-synonyms", rule, {
             errors: [
                 {
                     message: "同義語である「部屋」と「ルーム」が利用されています",
-                    index: 10
+                    index: 0
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「部屋」と「ルーム」が利用されています",
+                    index: 10,
+                    line: 1,
+                    column: 11,
+                    severity: 2,
+                    fix: {
+                        range: [10, 13],
+                        text: "部屋"
+                    }
                 }
             ]
         },
@@ -119,7 +206,20 @@ tester.run("textlint-rule-no-synonyms", rule, {
             errors: [
                 {
                     message: "同義語である「部屋」と「room」が利用されています",
-                    index: 6
+                    index: 0
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「部屋」と「room」が利用されています",
+                    index: 6,
+                    line: 1,
+                    column: 7,
+                    severity: 2,
+                    fix: {
+                        range: [6, 10],
+                        text: "部屋"
+                    }
                 }
             ]
         },
@@ -178,6 +278,46 @@ tester.run("textlint-rule-no-synonyms", rule, {
                 {
                     message: "「ルーム」の同義語である「部屋」が利用されています",
                     index: 26
+                }
+            ]
+        },
+        {
+            text: "サーバとサーバーの表記揺れがある。この雇入と雇入れの違いは難しい問題だ。",
+            output: "サーバとサーバの表記揺れがある。この雇入と雇入の違いは難しい問題だ。",
+            errors: [
+                {
+                    message: "同義語である「サーバ」と「サーバー」が利用されています",
+                    index: 0
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「サーバ」と「サーバー」が利用されています",
+                    index: 4,
+                    line: 1,
+                    column: 5,
+                    severity: 2,
+                    fix: {
+                        range: [4, 8],
+                        text: "サーバ"
+                    }
+                },
+                {
+                    message: "同義語である「雇入」と「雇入れ」が利用されています",
+                    index: 19
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「雇入」と「雇入れ」が利用されています",
+                    index: 22,
+                    line: 1,
+                    column: 23,
+                    severity: 2,
+                    fix: {
+                        range: [22, 25],
+                        text: "雇入"
+                    }
                 }
             ]
         }

@@ -50,6 +50,7 @@
     "trailingComma": "none"
   },
   "dependencies": {
+    "@types/tiny-segmenter": "^0.2.0",
     "kuromojin": "^3.0.0",
     "textlint-rule-helper": "^2.1.1",
     "tiny-segmenter": "^0.2.0"

@@ -3,6 +3,9 @@ import { createIndex, ItemGroup, Midashi } from "./create-index";
 import { SudachiSynonyms } from "sudachi-synonyms-dictionary-kurai-forked-ver";
 import { wrapReportHandler } from "textlint-rule-helper";
 import { tokenize } from "kuromojin";
+import TinySegmenter from "tiny-segmenter";
+
+const segmenter = new TinySegmenter();
 
 export interface Options {
     /**
@@ -95,7 +98,14 @@ const report: TextlintRuleReporter<Options> = (context, options = {}) => {
                 async [Syntax.Str](node) {
                     const { keyItemGroupMap } = await indexPromise;
                     const text = getSource(node);
-                    const segments = (await tokenize(text)).map((e) => e.surface_form);
+                    let segments: string[];
+                    const tinySegments: string[] = segmenter.segment(text);
+                    const kuromojiSegments = (await tokenize(text)).map((e) => e.surface_form);
+                    if (tinySegments.length > kuromojiSegments.length) {
+                        segments = kuromojiSegments;
+                    } else {
+                        segments = tinySegments;
+                    }
                     let absoluteIndex = node.range[0];
                     segments.forEach((segement) => {
                         matchSegment(segement, absoluteIndex, keyItemGroupMap);
@@ -104,6 +114,8 @@ const report: TextlintRuleReporter<Options> = (context, options = {}) => {
                 },
                 async [Syntax.DocumentExit](node) {
                     await indexPromise;
+                    const text = getSource(node);
+                    await tokenize(text);
                     for (const itemGroup of usedItemGroup.values()) {
                         const items = itemGroup.usedItems(usedSudachiSynonyms, {
                             allows,
@@ -127,17 +139,25 @@ const report: TextlintRuleReporter<Options> = (context, options = {}) => {
                                 );
                             }
                         } else if (items.length >= 2) {
-                            const 同義の見出しList = items.map((item) => item.midashi);
-                            // select last used
-                            const matchSegment = locationMap.get(items[items.length - 1]);
-                            const index = matchSegment ? matchSegment.index : 0;
-                            const message = `同義語である「${同義の見出しList.join("」と「")}」が利用されています`;
-                            report(
-                                node,
-                                new RuleError(message, {
-                                    index
-                                })
-                            );
+                            const midashiList = items.map((item) => item.midashi);
+                            items.forEach((item, itemIdx) => {
+                                const index = locationMap.get(item)?.index ?? 0;
+                                const deniedWord = item.midashi;
+                                const message = `同義語である「${midashiList.join("」と「")}」が利用されています`;
+                                report(
+                                    node,
+                                    new RuleError(message, {
+                                        index,
+                                        fix:
+                                            itemIdx === 0
+                                                ? undefined
+                                                : fixer.replaceTextRange(
+                                                      [index, index + deniedWord.length],
+                                                      midashiList[0]
+                                                  )
+                                    })
+                                );
+                            });
                         }
                     }
                 }
