@@ -139,17 +139,25 @@ const report: TextlintRuleReporter<Options> = (context, options = {}) => {
                                 );
                             }
                         } else if (items.length >= 2) {
-                            const 同義の見出しList = items.map((item) => item.midashi);
-                            // select last used
-                            const matchSegment = locationMap.get(items[items.length - 1]);
-                            const index = matchSegment ? matchSegment.index : 0;
-                            const message = `同義語である「${同義の見出しList.join("」と「")}」が利用されています`;
-                            report(
-                                node,
-                                new RuleError(message, {
-                                    index
-                                })
-                            );
+                            const midashiList = items.map((item) => item.midashi);
+                            items.forEach((item, itemIdx) => {
+                                const index = locationMap.get(item)?.index ?? 0;
+                                const deniedWord = item.midashi;
+                                const message = `同義語である「${midashiList.join("」と「")}」が利用されています`;
+                                report(
+                                    node,
+                                    new RuleError(message, {
+                                        index,
+                                        fix:
+                                            itemIdx === 0
+                                                ? undefined
+                                                : fixer.replaceTextRange(
+                                                      [index, index + deniedWord.length],
+                                                      midashiList[0]
+                                                  )
+                                    })
+                                );
+                            });
                         }
                     }
                 }
