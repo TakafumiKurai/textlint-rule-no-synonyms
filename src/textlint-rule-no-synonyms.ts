@@ -98,7 +98,14 @@ const report: TextlintRuleReporter<Options> = (context, options = {}) => {
                 async [Syntax.Str](node) {
                     const { keyItemGroupMap } = await indexPromise;
                     const text = getSource(node);
-                    const segments = (await tokenize(text)).map((e) => e.surface_form);
+                    let segments: string[];
+                    const tinySegments: string[] = segmenter.segment(text);
+                    const kuromojiSegments = (await tokenize(text)).map((e) => e.surface_form);
+                    if (tinySegments.length > kuromojiSegments.length) {
+                        segments = kuromojiSegments;
+                    } else {
+                        segments = tinySegments;
+                    }
                     let absoluteIndex = node.range[0];
                     segments.forEach((segement) => {
                         matchSegment(segement, absoluteIndex, keyItemGroupMap);
@@ -107,6 +114,8 @@ const report: TextlintRuleReporter<Options> = (context, options = {}) => {
                 },
                 async [Syntax.DocumentExit](node) {
                     await indexPromise;
+                    const text = getSource(node);
+                    await tokenize(text);
                     for (const itemGroup of usedItemGroup.values()) {
                         const items = itemGroup.usedItems(usedSudachiSynonyms, {
                             allows,

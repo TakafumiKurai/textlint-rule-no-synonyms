@@ -57,6 +57,15 @@ tester.run("textlint-rule-no-synonyms", rule, {
     ],
     invalid: [
         {
+            text: "問い合わせと問合せ",
+            errors: [
+                {
+                    message: "同義語である「問い合わせ」と「問合せ」が利用されています",
+                    index: 6
+                }
+            ]
+        },
+        {
             text: "サーバとサーバーの表記揺れがある",
             errors: [
                 {
