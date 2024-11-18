@@ -150,7 +150,11 @@ const report: TextlintRuleReporter<Options> = (context, options = {}) => {
                                         index,
                                         fix:
                                             itemIdx === 0
-                                                ? undefined
+                                                ? {
+                                                      text: deniedWord,
+                                                      range: [index, index + deniedWord.length],
+                                                      isAbsolute: false
+                                                  }
                                                 : fixer.replaceTextRange(
                                                       [index, index + deniedWord.length],
                                                       midashiList[0]
