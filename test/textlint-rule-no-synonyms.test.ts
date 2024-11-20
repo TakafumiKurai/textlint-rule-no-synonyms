@@ -320,6 +320,63 @@ tester.run("textlint-rule-no-synonyms", rule, {
                     }
                 }
             ]
+        },
+        {
+            text: "例えばサーバに関する問い合わせについて。\n問合せ対象のサーバーによって対応を分けることはありうるか",
+            errors: [
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「サーバ」と「サーバー」が利用されています",
+                    index: 3,
+                    line: 1,
+                    column: 4,
+                    severity: 2,
+                    fix: {
+                        range: [3, 6],
+                        text: "サーバ"
+                    }
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「問い合わせ」と「問合せ」が利用されています",
+                    index: 10,
+                    line: 1,
+                    column: 11,
+                    severity: 2,
+                    fix: {
+                        range: [10, 15],
+                        text: "問い合わせ"
+                    }
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「問い合わせ」と「問合せ」が利用されています",
+                    index: 21,
+                    line: 2,
+                    column: 1,
+                    severity: 2,
+                    fix: {
+                        range: [21, 24],
+                        text: "問い合わせ"
+                    }
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    message: "同義語である「サーバ」と「サーバー」が利用されています",
+                    index: 27,
+                    line: 2,
+                    column: 7,
+                    severity: 2,
+                    fix: {
+                        range: [27, 31],
+                        text: "サーバ"
+                    }
+                }
+            ]
         }
     ]
 });

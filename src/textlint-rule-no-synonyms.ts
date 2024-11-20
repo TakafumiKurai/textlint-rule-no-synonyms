@@ -51,6 +51,49 @@ export const DefaultOptions: Required<Options> = {
     allowLexeme: true
 };
 
+function mergeSegments(original: string, segmentA: string[], segmentB: string[]): string[] {
+    const result: string[] = [];
+
+    // セグメントの情報を作成し、元の文字列内での位置をトラッキング
+    function findNextIndex(segment: string, usedIndices: Set<number>): { start: number; end: number } | null {
+        let startIndex = original.indexOf(segment);
+        while (startIndex !== -1) {
+            if (!usedIndices.has(startIndex)) {
+                usedIndices.add(startIndex);
+                return { start: startIndex, end: startIndex + segment.length };
+            }
+            startIndex = original.indexOf(segment, startIndex + 1);
+        }
+        return null;
+    }
+
+    // 2つのsegment配列を、オリジナルの文字列の開始と終了のインデックスを持つ1つの配列に結合する。
+    const usedIndicesA: Set<number> = new Set();
+    const usedIndicesB: Set<number> = new Set();
+    const segments = [
+        ...segmentA
+            .map((seg) => ({ text: seg, ...findNextIndex(seg, usedIndicesA) }))
+            .filter((seg) => seg.start !== undefined),
+        ...segmentB
+            .map((seg) => ({ text: seg, ...findNextIndex(seg, usedIndicesB) }))
+            .filter((seg) => seg.start !== undefined)
+    ].filter((seg): seg is { text: string; start: number; end: number } => seg !== null);
+
+    // segmentsを開始位置でソートし、等しい場合は長さの降順でソートする。
+    segments.sort((a, b) => a.start - b.start || b.text.length - a.text.length);
+
+    let currentIndex = 0;
+    for (const segment of segments) {
+        // segmentのstartが現在のcurrentIndex以上であれば、resultに追加する
+        if (segment.start >= currentIndex) {
+            result.push(segment.text);
+            currentIndex = segment.end;
+        }
+    }
+
+    return result;
+}
+
 const report: TextlintRuleReporter<Options> = (context, options = {}) => {
     const allowAlphabet = options.allowAlphabet ?? DefaultOptions.allowAlphabet;
     const allowNumber = options.allowNumber ?? DefaultOptions.allowNumber;
@@ -96,26 +139,22 @@ const report: TextlintRuleReporter<Options> = (context, options = {}) => {
         (report) => {
             return {
                 async [Syntax.Str](node) {
-                    const { keyItemGroupMap } = await indexPromise;
                     const text = getSource(node);
-                    let segments: string[];
                     const tinySegments: string[] = segmenter.segment(text);
                     const kuromojiSegments = (await tokenize(text)).map((e) => e.surface_form);
-                    if (tinySegments.length > kuromojiSegments.length) {
-                        segments = kuromojiSegments;
-                    } else {
-                        segments = tinySegments;
-                    }
+                    const segments = mergeSegments(text, tinySegments, kuromojiSegments);
+
                     let absoluteIndex = node.range[0];
+                    const { keyItemGroupMap } = await indexPromise;
                     segments.forEach((segement) => {
                         matchSegment(segement, absoluteIndex, keyItemGroupMap);
                         absoluteIndex += segement.length;
                     });
                 },
                 async [Syntax.DocumentExit](node) {
-                    await indexPromise;
                     const text = getSource(node);
                     await tokenize(text);
+                    await indexPromise;
                     for (const itemGroup of usedItemGroup.values()) {
                         const items = itemGroup.usedItems(usedSudachiSynonyms, {
                             allows,
