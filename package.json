@@ -1,6 +1,6 @@
 {
   "name": "textlint-rule-no-synonyms-kurai-forked-ver",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "同義語を表記ゆれをチェックするtextlintルール",
   "keywords": [
     "textlintrule"
