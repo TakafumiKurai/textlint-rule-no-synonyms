@@ -357,6 +357,10 @@ tester.run("textlint-rule-no-synonyms", rule, {
         },
         {
             text: "もしユーザーとユーザが両方あるなら。\nエンドユーザーとユーザーとユーザベースはどう？",
+            options: {
+                allowAlphabet: false,
+                allowNumber: false
+            },
             errors: [
                 {
                     type: "lint",
