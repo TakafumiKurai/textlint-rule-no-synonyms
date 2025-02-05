@@ -25,13 +25,6 @@ tester.run("textlint-rule-no-synonyms", rule, {
                 allows: ["ウェブアプリ"] // <= 片方が許可されていればOK
             }
         },
-        // preferWords
-        {
-            text: `ユーザーだけに統一されていればユーザーは許容する`,
-            options: {
-                preferWords: ["ユーザー"]
-            }
-        },
         // allowLexeme
         {
             text: "部屋の同義語はルームです",
@@ -224,59 +217,43 @@ tester.run("textlint-rule-no-synonyms", rule, {
             ]
         },
         {
-            text: "ユーザーは許可しユーザはエラー。allowAlphabetがtrueならuserはエラーにならない",
-            output: "ユーザーは許可しユーザーはエラー。allowAlphabetがtrueならuserはエラーにならない",
-            options: {
-                preferWords: ["ユーザー"]
-            },
+            text: "ユーザーはだめでユーザはエラー。allowAlphabetがtrueならuserはエラーにならない",
             errors: [
                 {
-                    message: "「ユーザー」の同義語である「ユーザ」が利用されています",
+                    index: 0
+                },
+                {
                     index: 8
                 }
             ]
         },
         {
-            text: "ユーザーは許可しallowAlphabetがfalseならユーザもuserもエラー",
-            output: "ユーザーは許可しallowAlphabetがfalseならユーザーもユーザーもエラー",
+            text: "ユーザーはだめでallowAlphabetがfalseならユーザもuserもエラー",
             options: {
-                preferWords: ["ユーザー"],
                 allowAlphabet: false
             },
             errors: [
                 {
-                    message: "「ユーザー」の同義語である「ユーザ」が利用されています",
+                    index: 0
+                },
+                {
                     index: 29
                 },
                 {
-                    message: "「ユーザー」の同義語である「user」が利用されています",
                     index: 33
                 }
             ]
         },
         {
-            text: "ユーザはエラー",
-            output: "ユーザーはエラー",
-            options: {
-                preferWords: ["ユーザー"]
-            },
-            errors: [
-                {
-                    message: "「ユーザー」の同義語である「ユーザ」が利用されています",
-                    index: 0
-                }
-            ]
-        },
-        {
             text: "ルームは許可しallowLexemeがfalseなら部屋もエラー",
-            output: "ルームは許可しallowLexemeがfalseならルームもエラー",
             options: {
-                preferWords: ["ルーム"],
                 allowLexeme: false
             },
             errors: [
                 {
-                    message: "「ルーム」の同義語である「部屋」が利用されています",
+                    index: 0
+                },
+                {
                     index: 26
                 }
             ]
@@ -375,6 +352,29 @@ tester.run("textlint-rule-no-synonyms", rule, {
                         range: [27, 31],
                         text: "サーバ"
                     }
+                }
+            ]
+        },
+        {
+            text: "もしユーザーとユーザが両方あるなら。\nエンドユーザーとユーザーとユーザベースはどう？",
+            errors: [
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    index: 2,
+                    line: 1
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    index: 7,
+                    line: 1
+                },
+                {
+                    type: "lint",
+                    ruleId: "textlint-rule-no-synonyms",
+                    index: 27,
+                    line: 2
                 }
             ]
         }

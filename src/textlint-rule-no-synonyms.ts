@@ -15,12 +15,6 @@ export interface Options {
      */
     allows?: string[];
     /**
-     * 使用を許可する見出し語の配列
-     * 定義された見出し語以外の同義語をエラーにします
-     * 例) ["ユーザー"] // => 「ユーザー」だけ許可し「ユーザ」などはエラーにする
-     */
-    preferWords?: string[];
-    /**
      * 同じ語形の語の中でのアルファベットの表記揺れを許可するかどうか
      * trueの場合はカタカナとアルファベットの表記ゆれを許可します
      * 例) 「ブログ」と「blog」
@@ -45,84 +39,117 @@ export interface Options {
 
 export const DefaultOptions: Required<Options> = {
     allows: [],
-    preferWords: [],
     allowAlphabet: true,
     allowNumber: true,
     allowLexeme: true
 };
 
-function mergeSegments(original: string, segmentA: string[], segmentB: string[]): string[] {
-    const result: string[] = [];
+/**
+ * TinySegmenter と Kuromoji の結果を単純にすべて結合し、元テキスト内の開始・終了位置を付与した配列を返す関数。
+ * 「大きい単語」の中に含まれる「小さい単語」を意図的にスキップするロジックを取り払っているため、
+ * 大きい単位・小さい単位ともに可能な限り取得し、結果としてすべてを matchSegment に渡す。
+ *
+ * 重複(同じ開始位置 + 同じテキスト)は1つにまとめる。
+ */
+function mergeSegments(
+    original: string,
+    segmentsA: string[],
+    segmentsB: string[]
+): Array<{ text: string; start: number; end: number }> {
+    const temps: Array<{ text: string; start: number; end: number }> = [];
+    const results: Array<{ text: string; start: number; end: number }> = [];
 
-    // セグメントの情報を作成し、元の文字列内での位置をトラッキング
-    function findNextIndex(segment: string, usedIndices: Set<number>): { start: number; end: number } | null {
-        let startIndex = original.indexOf(segment);
-        while (startIndex !== -1) {
-            if (!usedIndices.has(startIndex)) {
-                usedIndices.add(startIndex);
-                return { start: startIndex, end: startIndex + segment.length };
+    // `segment` が `original` 内に複数回出現する場合も含めて全て取得する
+    const collectPositions = (segment: string) => {
+        let index = 0;
+        while (true) {
+            const foundIndex = original.indexOf(segment, index);
+            if (foundIndex === -1) {
+                break;
             }
-            startIndex = original.indexOf(segment, startIndex + 1);
+            temps.push({
+                text: segment,
+                start: foundIndex,
+                end: foundIndex + segment.length
+            });
+            index = foundIndex + 1;
         }
-        return null;
+    };
+
+    // TinySegmenterの結果 + Kuromojiの結果 をそれぞれ走査
+    segmentsA.forEach((seg) => collectPositions(seg));
+    segmentsB.forEach((seg) => collectPositions(seg));
+
+    // 同じ開始位置＋同じテキストの重複を排除する
+    const uniqueMap = new Map<string, { text: string; start: number; end: number }>();
+    for (const t of temps) {
+        const key = `${t.text}@${t.start}`;
+        if (!uniqueMap.has(key)) {
+            uniqueMap.set(key, t);
+        }
     }
 
-    // 2つのsegment配列を、オリジナルの文字列の開始と終了のインデックスを持つ1つの配列に結合する。
-    const usedIndicesA: Set<number> = new Set();
-    const usedIndicesB: Set<number> = new Set();
-    const segments = [
-        ...segmentA
-            .map((seg) => ({ text: seg, ...findNextIndex(seg, usedIndicesA) }))
-            .filter((seg) => seg.start !== undefined),
-        ...segmentB
-            .map((seg) => ({ text: seg, ...findNextIndex(seg, usedIndicesB) }))
-            .filter((seg) => seg.start !== undefined)
-    ].filter((seg): seg is { text: string; start: number; end: number } => seg !== null);
+    // start が小さい順、同じ start なら text が長い順に並べる
+    const mergedSegments = Array.from(uniqueMap.values());
+    mergedSegments.sort((a, b) => {
+        if (a.start === b.start) {
+            return b.text.length - a.text.length;
+        }
+        return a.start - b.start;
+    });
 
-    // segmentsを開始位置でソートし、等しい場合は長さの降順でソートする。
-    segments.sort((a, b) => a.start - b.start || b.text.length - a.text.length);
-
+    // マージされたセグメントから、重複のある要素のうち短い要素を取り除く
     let currentIndex = 0;
-    for (const segment of segments) {
-        // segmentのstartが現在のcurrentIndex以上であれば、resultに追加する
+    for (const segment of mergedSegments) {
         if (segment.start >= currentIndex) {
-            result.push(segment.text);
+            results.push(segment);
             currentIndex = segment.end;
         }
     }
 
-    return result;
+    return results;
 }
 
 const report: TextlintRuleReporter<Options> = (context, options = {}) => {
     const allowAlphabet = options.allowAlphabet ?? DefaultOptions.allowAlphabet;
     const allowNumber = options.allowNumber ?? DefaultOptions.allowNumber;
     const allowLexeme = options.allowLexeme ?? DefaultOptions.allowLexeme;
-    const allows = options.allows !== undefined ? options.allows : DefaultOptions.allows;
-    const preferWords = options.preferWords !== undefined ? options.preferWords : DefaultOptions.preferWords;
+    const allows = options.allows ?? DefaultOptions.allows;
+
     const { Syntax, getSource, RuleError, fixer } = context;
     const usedSudachiSynonyms: Set<SudachiSynonyms> = new Set();
-    const locationMap: Map<SudachiSynonyms, { index: number }> = new Map();
     const usedItemGroup: Set<ItemGroup> = new Set();
+    const locationMap: Map<SudachiSynonyms, number[]> = new Map();
+
     const indexPromise = createIndex({ allowLexeme });
-    const matchSegment = (segment: string, absoluteIndex: number, keyItemGroupMap: Map<Midashi, ItemGroup[]>) => {
-        const itemGroups = keyItemGroupMap.get(segment);
+
+    // テキスト中の単語を辞書と照合し、該当する ItemGroup があれば記録する
+    const matchSegment = (segmentText: string, startIndex: number, keyItemGroupMap: Map<Midashi, ItemGroup[]>) => {
+        const itemGroups = keyItemGroupMap.get(segmentText);
         if (!itemGroups) {
             return;
         }
-        itemGroups.forEach((itemGroup) => {
-            // "アーカイブ" など同じ見出しを複数回もつItemGroupがあるため、ItemGroupごとに1度のみに限定
-            let midashAtOnce = false;
-            itemGroup.items.forEach((item) => {
-                if (!midashAtOnce && item.midashi === segment) {
-                    midashAtOnce = true;
-                    usedSudachiSynonyms.add(item);
-                    locationMap.set(item, { index: absoluteIndex });
+        // 該当する全ItemGroupを調べる
+        for (const itemGroup of itemGroups) {
+            let recorded = false;
+            for (const item of itemGroup.items) {
+                if (item.midashi === segmentText) {
+                    // 同じ単語については1グループ中で最初の一回だけ usedSudachiSynonyms に登録
+                    if (!recorded) {
+                        usedSudachiSynonyms.add(item);
+                        recorded = true;
+                    }
+                    // 出現位置を記録
+                    if (!locationMap.has(item)) {
+                        locationMap.set(item, []);
+                    }
+                    locationMap.get(item)!.push(startIndex);
                 }
-                usedItemGroup.add(itemGroup);
-            });
-        });
+            }
+            usedItemGroup.add(itemGroup);
+        }
     };
+
     return wrapReportHandler(
         context,
         {
@@ -140,67 +167,67 @@ const report: TextlintRuleReporter<Options> = (context, options = {}) => {
             return {
                 async [Syntax.Str](node) {
                     const text = getSource(node);
-                    const tinySegments: string[] = segmenter.segment(text);
-                    const kuromojiSegments = (await tokenize(text)).map((e) => e.surface_form);
-                    const segments = mergeSegments(text, tinySegments, kuromojiSegments);
 
-                    let absoluteIndex = node.range[0];
+                    // TinySegmenter & kuromoji それぞれで分割
+                    const tinyTokens = segmenter.segment(text);
+                    const kuromojiTokens = await tokenize(text);
+                    const kuromojiSegments = kuromojiTokens.map((token) => token.surface_form);
+
+                    // 両方の結果をマージ
+                    const mergedSegments = mergeSegments(text, tinyTokens, kuromojiSegments);
+
+                    // マージした各セグメントを辞書と照合
                     const { keyItemGroupMap } = await indexPromise;
-                    segments.forEach((segement) => {
-                        matchSegment(segement, absoluteIndex, keyItemGroupMap);
-                        absoluteIndex += segement.length;
-                    });
+                    for (const seg of mergedSegments) {
+                        // node の先頭位置 + seg.start で文章全体からの絶対位置を算出
+                        const absoluteIndex = node.range[0] + seg.start;
+                        matchSegment(seg.text, absoluteIndex, keyItemGroupMap);
+                    }
                 },
                 async [Syntax.DocumentExit](node) {
-                    const text = getSource(node);
-                    await tokenize(text);
+                    await tokenize(getSource(node));
                     await indexPromise;
+
+                    // 収集した ItemGroup それぞれに対し、実際に “使われた” items を洗い出し報告
                     for (const itemGroup of usedItemGroup.values()) {
+                        // ItemGroup 側の usedItems() では、allowAlphabet/allowNumber/allows 等の条件を見ながら
+                        // 「この item は実際に報告対象にするかどうか」を決めて返してくれる
                         const items = itemGroup.usedItems(usedSudachiSynonyms, {
-                            allows,
                             allowAlphabet,
-                            allowNumber
+                            allowNumber,
+                            allows
                         });
-                        const preferWord = preferWords.find((midashi) => itemGroup.getItem(midashi));
-                        const allowed = allows.find((midashi) => itemGroup.getItem(midashi));
-                        if (preferWord && !allowed) {
-                            const deniedItems = items.filter((item) => item.midashi !== preferWord);
-                            for (const item of deniedItems) {
-                                const index = locationMap.get(item)?.index ?? 0;
-                                const deniedWord = item.midashi;
-                                const message = `「${preferWord}」の同義語である「${deniedWord}」が利用されています`;
-                                report(
-                                    node,
-                                    new RuleError(message, {
-                                        index,
-                                        fix: fixer.replaceTextRange([index, index + deniedWord.length], preferWord)
-                                    })
-                                );
-                            }
-                        } else if (items.length >= 2) {
+
+                        if (items.length >= 2) {
                             const midashiList = items.map((item) => item.midashi);
-                            items.forEach((item, itemIdx) => {
-                                const index = locationMap.get(item)?.index ?? 0;
+                            // 全登場単語をすべて報告する
+                            for (let i = 0; i < items.length; i++) {
+                                const item = items[i];
                                 const deniedWord = item.midashi;
+                                const indices = locationMap.get(item) || [];
                                 const message = `同義語である「${midashiList.join("」と「")}」が利用されています`;
-                                report(
-                                    node,
-                                    new RuleError(message, {
-                                        index,
-                                        fix:
-                                            itemIdx === 0
-                                                ? {
-                                                      text: deniedWord,
-                                                      range: [index, index + deniedWord.length],
-                                                      isAbsolute: false
-                                                  }
-                                                : fixer.replaceTextRange(
-                                                      [index, index + deniedWord.length],
-                                                      midashiList[0]
-                                                  )
-                                    })
-                                );
-                            });
+
+                                for (const idx of indices) {
+                                    report(
+                                        node,
+                                        new RuleError(message, {
+                                            index: idx,
+                                            fix:
+                                                i === 0
+                                                    ? {
+                                                          // 先頭アイテム(例: midashiList[0])に統一
+                                                          text: deniedWord,
+                                                          range: [idx, idx + deniedWord.length],
+                                                          isAbsolute: false
+                                                      }
+                                                    : fixer.replaceTextRange(
+                                                          [idx, idx + deniedWord.length],
+                                                          midashiList[0]
+                                                      )
+                                        })
+                                    );
+                                }
+                            }
                         }
                     }
                 }
